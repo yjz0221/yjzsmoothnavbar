@@ -4,7 +4,7 @@
 
 ## DEMO效果
 
-<img src="G:\Android_Project\my_github\remote\yjzsmoothnavbar\demo.gif" alt="demo" style="zoom:60%;" />
+<img src="https://github.com/yjz0221/yjzsmoothnavbar/blob/main/demo.gif" alt="demo" style="zoom:60%;" />
 
 
 
