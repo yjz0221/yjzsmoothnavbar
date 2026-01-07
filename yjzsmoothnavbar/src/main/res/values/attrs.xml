@@ -43,5 +43,7 @@
             <flag name="bottom" value="12"/>
             <flag name="none" value="0"/>
         </attr>
+        <!--文字和图标一致同时显示-->
+        <attr name="ssb_alwaysShowText" format="boolean" />
     </declare-styleable>
 </resources>

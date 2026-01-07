@@ -1,7 +1,6 @@
 package com.github.yjz.widget.nav
 
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -65,6 +64,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     private var itemPadding = 10f.dp() // 图标与文字的间距
     private var indicatorMarginVertical = 5f.dp() // 指示器上下的边距，默认给个 5dp
     private var roundCornersMode = 15 //圆角控制位，默认全圆角 (15 = 1|2|4|8)
+    private var alwaysShowText = false // 选中和未选中时一直显示图标和文字
 
     // 内部样式控制 (默认左右结构)
     private var itemStyle = STYLE_SIDE_BY_SIDE
@@ -119,6 +119,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                 itemPadding = getDimension(R.styleable.SuperSmoothBottomBar_ssb_itemPadding, itemPadding)
                 indicatorMarginVertical = getDimension(R.styleable.SuperSmoothBottomBar_ssb_indicatorMarginVertical, indicatorMarginVertical)
                 roundCornersMode = getInt(R.styleable.SuperSmoothBottomBar_ssb_roundCorners, roundCornersMode)
+                alwaysShowText = getBoolean(R.styleable.SuperSmoothBottomBar_ssb_alwaysShowText, alwaysShowText)
 
                 // 获取 orientation 属性并映射为 itemStyle
                 itemStyle = getInt(R.styleable.SuperSmoothBottomBar_ssb_orientation, itemStyle)
@@ -261,102 +262,115 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         val centerY = height / 2f
 
         items.forEachIndexed { index, item ->
-            // Item 的几何中心 X 坐标
             val itemCenterX = sideMargins + (index * itemWidth) + (itemWidth / 2)
-
-            // 计算当前 Item 距离指示器中心的距离
             val distance = abs(itemCenterX - indicatorLocation)
-
-            // 计算动画进度 fraction (0.0 ~ 1.0)
-            // 0.0 表示距离很远，1.0 表示指示器正处于该 Item 下方
-            // 公式解释：当距离超过一个 Item 宽度时，视为 0
             val fraction = (1f - (distance / itemWidth)).coerceIn(0f, 1f)
 
-            // 根据 fraction 动态计算颜色
-            val iconColor = evaluateColor(fraction, itemIconTint, itemIconTintActive)
-
-            if (itemStyle == STYLE_STACKED) {
-                // ============================================
-                // 样式 1: Stacked (图标在上，文字在下)
-                // ============================================
-                // 文字颜色逻辑：跟随图标，从“未选中色”过渡到“选中色”
+            // === 1. 没有图标：纯文字模式 (逻辑不变，始终居中) ===
+            if (item.icon == null) {
                 val textColor = evaluateColor(fraction, itemIconTint, itemIconTintActive)
+                textPaint.color = textColor
 
-                // 1. 图标位置计算
-                // fraction 越大(越被选中)，图标越往上移
-                val verticalOffset = fraction * (itemTextSize / 1.4f)
-                val iconCenterY = centerY - verticalOffset
+                val maxTextWidth = itemWidth - itemPadding * 2
+                textPaint.textSize = calculateAutoTextSize(item.title, maxTextWidth, itemTextSize)
 
-                // 绘制图标
-                item.icon?.let { drawable ->
-                    DrawableCompat.setTint(drawable, iconColor)
-                    val l = (itemCenterX - itemIconSize / 2).toInt()
-                    val t = (iconCenterY - itemIconSize / 2).toInt()
-                    drawable.setBounds(l, t, l + itemIconSize.toInt(), t + itemIconSize.toInt())
-                    drawable.draw(canvas)
-                }
-
-                // 2. 文字绘制 (仅当有一定选中进度时才绘制)
-                if (fraction > 0.2f) {
-                    textPaint.color = textColor
-
-                    // 自动计算文字大小，防止溢出 Item 宽度
-                    val maxTextW = itemWidth * 0.95f
-                    val fontSize = calculateAutoTextSize(item.title, maxTextW, itemTextSize)
-                    textPaint.textSize = fontSize * fraction // 动效：字号从小变大
-
-                    // 文字基线计算：位于图标下方 + padding
-                    val textY = iconCenterY + (itemIconSize / 2) + itemPadding
-                    val fontMetrics = textPaint.fontMetrics
-                    val baseline = textY - fontMetrics.top / 2
-
-                    canvas.drawText(item.title, itemCenterX, baseline, textPaint)
-                }
+                val fontMetrics = textPaint.fontMetrics
+                val baseline = centerY - (fontMetrics.descent + fontMetrics.ascent) / 2
+                canvas.drawText(item.title, itemCenterX, baseline, textPaint)
 
             } else {
-                // ============================================
-                // 样式 0: Side-by-Side (图标在左，文字在右)
-                // ============================================
+                // === 2. 有图标：根据样式绘制 ===
 
-                // 文字颜色：从透明过渡到“选中图标色” (因为水平模式未选中时文字是隐藏的)
-                val textColor = evaluateColor(fraction, Color.TRANSPARENT, itemIconTintActive)
+                // 图标颜色计算
+                val iconColor = evaluateColor(fraction, itemIconTint, itemIconTintActive)
 
-                // 1. 计算文字和宽度
-                val maxTextWidth = itemWidth - itemIconSize - itemPadding
-                val finalFontSize = calculateAutoTextSize(item.title, maxTextWidth, itemTextSize)
-                textPaint.textSize = finalFontSize
-                val textRealWidth = textPaint.measureText(item.title)
+                // 文字起始颜色：如果总是显示，则从 Tint 色开始；否则从透明开始
+                val textStartColor = if (alwaysShowText) itemIconTint else Color.TRANSPARENT
+                val textColor = evaluateColor(fraction, textStartColor, itemIconTintActive)
 
-                // 2. 计算挤压后的总内容宽度
-                // 未选中时宽度 = iconSize
-                // 选中时宽度 = iconSize + padding + textWidth
-                val currentContentWidth = itemIconSize + (itemPadding + textRealWidth) * fraction
+                if (itemStyle == STYLE_STACKED) {
+                    // ============================================
+                    // 样式 1: Stacked (上下结构)
+                    // ============================================
 
-                // 3. 计算起始 X 坐标，保证整体居中
-                val startX = itemCenterX - (currentContentWidth / 2)
+                    // 垂直偏移量计算：
+                    // 如果 alwaysShowText，图标位置应该固定在上方，不随 fraction 移动，防止文字忽隐忽现导致跳动
+                    // 否则，保持原有的弹跳动画
+                    val fixedOffset = itemTextSize / 1.4f
+                    val verticalOffset = if (alwaysShowText) fixedOffset else (fraction * fixedOffset)
 
-                // 绘制图标
-                item.icon?.let { drawable ->
-                    DrawableCompat.setTint(drawable, iconColor)
-                    val l = startX.toInt()
-                    val t = (centerY - itemIconSize / 2).toInt()
-                    drawable.setBounds(l, t, l + itemIconSize.toInt(), t + itemIconSize.toInt())
-                    drawable.draw(canvas)
-                }
+                    val iconCenterY = centerY - verticalOffset
 
-                // 绘制文字
-                if (fraction > 0.05f) {
-                    textPaint.color = textColor
-                    textPaint.textSize = finalFontSize // 水平模式不需要字号动画，只渐变颜色
+                    // 绘制图标
+                    item.icon.let { drawable ->
+                        DrawableCompat.setTint(drawable, iconColor)
+                        val l = (itemCenterX - itemIconSize / 2).toInt()
+                        val t = (iconCenterY - itemIconSize / 2).toInt()
+                        drawable.setBounds(l, t, l + itemIconSize.toInt(), t + itemIconSize.toInt())
+                        drawable.draw(canvas)
+                    }
 
-                    // 文字位于图标右侧
-                    val textX = startX + itemIconSize + (itemPadding * fraction) + (textRealWidth / 2)
+                    // 绘制文字
+                    // 如果 alwaysShowText 为 true，则无视 fraction 阈值，始终绘制
+                    if (alwaysShowText || fraction > 0.2f) {
+                        textPaint.color = textColor
 
-                    // 垂直居中
-                    val fontMetrics = textPaint.fontMetrics
-                    val textY = centerY - (fontMetrics.descent + fontMetrics.ascent) / 2
+                        val maxTextW = itemWidth * 0.95f
+                        val targetFontSize = calculateAutoTextSize(item.title, maxTextW, itemTextSize)
 
-                    canvas.drawText(item.title, textX, textY, textPaint)
+                        // 字号动画逻辑：
+                        // 如果 alwaysShowText，字号变化不要太剧烈 (0.85 -> 1.0)，保持平稳
+                        // 否则，字号从 0 -> 1.0 (这也是原有的弹跳效果)
+                        val sizeFraction = if (alwaysShowText) (0.85f + 0.15f * fraction) else fraction
+                        textPaint.textSize = targetFontSize * sizeFraction
+
+                        // 计算文字基线
+                        val textY = iconCenterY + (itemIconSize / 2) + itemPadding
+                        val fontMetrics = textPaint.fontMetrics
+                        val baseline = textY - fontMetrics.top / 2
+
+                        canvas.drawText(item.title, itemCenterX, baseline, textPaint)
+                    }
+
+                } else {
+                    // ============================================
+                    // 样式 0: Side-by-Side (左右结构)
+                    // ============================================
+
+                    val maxTextWidth = itemWidth - itemIconSize - itemPadding
+                    val finalFontSize = calculateAutoTextSize(item.title, maxTextWidth, itemTextSize)
+                    textPaint.textSize = finalFontSize
+                    val textRealWidth = textPaint.measureText(item.title)
+
+                    // 宽度计算：左右结构依赖宽度展开动画。
+                    // 如果 alwaysShowText，我们依然让宽度随 fraction 变化(保持挤压动画)，但让文字提前可见
+                    val currentContentWidth = itemIconSize + (itemPadding + textRealWidth) * fraction
+                    val startX = itemCenterX - (currentContentWidth / 2)
+
+                    // 绘制图标
+                    item.icon.let { drawable ->
+                        DrawableCompat.setTint(drawable, iconColor)
+                        val l = startX.toInt()
+                        val t = (centerY - itemIconSize / 2).toInt()
+                        drawable.setBounds(l, t, l + itemIconSize.toInt(), t + itemIconSize.toInt())
+                        drawable.draw(canvas)
+                    }
+
+                    // 绘制文字
+                    // Side-by-Side 模式下，如果 fraction 太小，文字会和图标重叠，所以即使 alwaysShow 也要保留一点阈值
+                    if (alwaysShowText || fraction > 0.05f) {
+                        textPaint.color = textColor
+                        // 稍微调整一下 alwaysShow 下的透明度，避免重叠时太难看
+                        if (alwaysShowText) {
+                            textPaint.alpha = (255 * (0.3f + 0.7f * fraction)).toInt()
+                        }
+
+                        val textX = startX + itemIconSize + (itemPadding * fraction) + (textRealWidth / 2)
+                        val fontMetrics = textPaint.fontMetrics
+                        val textY = centerY - (fontMetrics.descent + fontMetrics.ascent) / 2
+
+                        canvas.drawText(item.title, textX, textY, textPaint)
+                    }
                 }
             }
         }
@@ -368,7 +382,6 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         // 只关心 X 轴
         val currentX = event.x
-
         // 计算每个 Item 的理论宽度
         val totalLength = width - (sideMargins * 2)
         val itemWidth = totalLength / items.size

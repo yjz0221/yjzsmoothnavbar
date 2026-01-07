@@ -130,7 +130,7 @@ bottomBar.setActiveItem(1)
 | `ssb_indicatorColor`          | color     | 选中指示器(滑块)的颜色                                       | #FFD600    |
 | `ssb_indicatorRadius`         | dimension | 指示器的圆角半径                                             | 10dp       |
 | `ssb_indicatorMarginVertical` | dimension | 指示器距离顶部和底部的边距 (值越大，指示器越细)              | 5dp        |
-|                               |           |                                                              |            |
+| `ssb_alwaysShowText`          | boolean   | 文字和图标始终同时显示                                       | false      |
 | `ssb_textSize`                | dimension | 文字大小                                                     | 12sp       |
 | `ssb_iconSize`                | dimension | 图标的宽和高                                                 | 24dp       |
 | `ssb_iconTint`                | color     | **未选中**状态下的图标、文字颜色                             | Gray       |
