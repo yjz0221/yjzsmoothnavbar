@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="SuperSmoothBottomBar">
+        <!--设置整个导航栏底板的背景颜色-->
+        <attr name="ssb_backgroundColor" format="color"/>
+        <!--设置导航栏整体外轮廓的圆角大小-->
+        <attr name="ssb_barCornerRadius" format="dimension"/>
+        <!--设置选中指示器（那个滑动的色块/游标）的颜色-->
+        <attr name="ssb_indicatorColor" format="color"/>
+        <!--设置选中指示器（滑块）的圆角大小-->
+        <attr name="ssb_indicatorRadius" format="dimension"/>
+        <!--文字大小-->
+        <attr name="ssb_textSize" format="dimension"/>
+        <!--图标大小-->
+        <attr name="ssb_iconSize" format="dimension"/>
+        <!--设置未选中状态下的图标、文字颜色-->
+        <attr name="ssb_iconTint" format="color"/>
+        <!--设置选中状态下的图标、文字颜色-->
+        <attr name="ssb_iconTintActive" format="color"/>
+        <!--控制导航栏最左侧和最右侧的内边距（留白距离）-->
+        <attr name="ssb_sideMargins" format="dimension"/>
+        <!--控制 Item 内部图标与文字之间的间距-->
+        <attr name="ssb_itemPadding" format="dimension"/>
+        <!--自定义色块（指示器）上下边距-->
+        <attr name="ssb_indicatorMarginVertical" format="dimension"/>
+        <!--导航菜单-->
+        <attr name="ssb_menu" format="reference"/>
+        <!--控制 Item 内部内容的排版样式-->
+        <attr name="ssb_orientation" format="enum">
+            <!--左右结构（经典胶囊样式）。选中时，图标向左移动，文字显示在图标右侧-->
+            <enum name="horizontal" value="0"/>
+            <!--上下结构（传统导航栏样式）。选中时，图标向上移动，文字显示在图标下方-->
+            <enum name="vertical" value="1"/>
+        </attr>
+        <!--控制哪些角显示圆角半径值-->
+        <attr name="ssb_roundCorners">
+            <flag name="topLeft" value="1"/>
+            <flag name="topRight" value="2"/>
+            <flag name="bottomRight" value="4"/>
+            <flag name="bottomLeft" value="8"/>
+            <flag name="all" value="15"/>
+            <flag name="top" value="3"/>
+            <flag name="bottom" value="12"/>
+            <flag name="none" value="0"/>
+        </attr>
+    </declare-styleable>
+</resources>

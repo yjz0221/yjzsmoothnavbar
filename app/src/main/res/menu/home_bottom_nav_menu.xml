@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_scan"
+        android:icon="@drawable/ic_home_nav_scan"
+        android:title="扫描" />
+
+    <item
+        android:id="@+id/nav_diag"
+        android:icon="@drawable/ic_home_nav_diag"
+        android:title="闪连" />
+
+    <item
+        android:id="@+id/nav_manual"
+        android:icon="@drawable/ic_home_nav_search"
+        android:title="搜索" />
+
+
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/ic_home_nav_history"
+        android:title="记录" />
+
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_home_nav_profile"
+        android:title="我的" />
+</menu>
