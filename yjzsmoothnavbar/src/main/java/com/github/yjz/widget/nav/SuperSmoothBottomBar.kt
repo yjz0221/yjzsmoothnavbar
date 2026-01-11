@@ -13,7 +13,6 @@ import android.view.animation.OvershootInterpolator
 import android.widget.PopupMenu
 import androidx.annotation.MenuRes
 import androidx.core.graphics.drawable.DrawableCompat
-import com.github.yjz.widget.R
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
