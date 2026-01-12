@@ -2,7 +2,7 @@
 <resources>
     <declare-styleable name="SuperSmoothBottomBar">
         <!--设置整个导航栏底板的背景颜色-->
-        <attr name="ssb_backgroundColor" format="color"/>
+        <attr name="ssb_backgroundColor" format="color|reference"/>
         <!--设置导航栏整体外轮廓的圆角大小-->
         <attr name="ssb_barCornerRadius" format="dimension"/>
         <!--设置选中指示器（那个滑动的色块/游标）的颜色-->

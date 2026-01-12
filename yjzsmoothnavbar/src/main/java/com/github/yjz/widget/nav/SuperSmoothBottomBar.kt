@@ -3,6 +3,7 @@ package com.github.yjz.widget.nav
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.MenuInflater
@@ -49,7 +50,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     }
 
     // --- XML配置属性 ---
-    private var barBackgroundColor = Color.WHITE
+    private var barBackgroundDrawable: Drawable? = null //整体背景
     private var barCornerRadius = 0f // 外层背景的大圆角
 
     private var indicatorColor = Color.parseColor("#FFD600")
@@ -108,7 +109,15 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         // 读取自定义属性
         context.theme.obtainStyledAttributes(attrs, R.styleable.SuperSmoothBottomBar, 0, 0).apply {
             try {
-                barBackgroundColor = getColor(R.styleable.SuperSmoothBottomBar_ssb_backgroundColor, barBackgroundColor)
+                // 尝试获取 Drawable (支持 color 或 drawable 引用)
+                if (hasValue(R.styleable.SuperSmoothBottomBar_ssb_backgroundColor)) {
+                    barBackgroundDrawable = getDrawable(R.styleable.SuperSmoothBottomBar_ssb_backgroundColor)
+                }
+                // 如果没有设置，或者获取失败，默认给一个白色的 ColorDrawable
+                if (barBackgroundDrawable == null) {
+                    barBackgroundDrawable = ColorDrawable(Color.WHITE)
+                }
+
                 barCornerRadius = getDimension(R.styleable.SuperSmoothBottomBar_ssb_barCornerRadius, barCornerRadius)
 
                 indicatorColor = getColor(R.styleable.SuperSmoothBottomBar_ssb_indicatorColor, indicatorColor)
@@ -200,6 +209,9 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
 
         // 使用带数组参数的方法添加圆角矩形
         backgroundPath.addRoundRect(backgroundRect, radii, Path.Direction.CW)
+
+        // 更新背景 Drawable 的尺寸，让其填满 View
+        barBackgroundDrawable?.setBounds(0, 0, w, h)
     }
 
 
@@ -211,8 +223,9 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         val saveCount = canvas.save()
         canvas.clipPath(backgroundPath)
 
-        // 2. 绘制背景颜色
-        canvas.drawColor(barBackgroundColor)
+        // 2. 绘制背景
+//        canvas.drawColor(barBackgroundColor)
+        barBackgroundDrawable?.draw(canvas)
 
         // 3. 计算基础布局参数
         // 无论何种样式，Item 总是水平平分宽度的

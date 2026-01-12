@@ -35,7 +35,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottomBar1"
-        app:ssb_backgroundColor="#FFFFFF"
+        app:ssb_backgroundColor="@drawable/ic_launcher_background"
         app:ssb_barCornerRadius="20dp"
         app:ssb_iconTintActive="#B014BB"
         app:ssb_indicatorColor="#41B83D"
