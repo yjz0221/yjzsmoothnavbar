@@ -77,6 +77,12 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     private var activeItemIndex = 0
     // 指示器的中心 X 坐标 (这是动画的核心驱动值)
     private var indicatorLocation = 0f
+    // 记录上一个选中的位置，用于动画过滤
+    private var previousItemIndex = -1
+    // 标记是否正在执行点击切换动画
+    private var isSnapping = false
+
+
 
     // --- 触摸交互相关 ---
     private var isDragging = false // 是否正在拖拽中
@@ -263,7 +269,18 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         items.forEachIndexed { index, item ->
             val itemCenterX = sideMargins + (index * itemWidth) + (itemWidth / 2)
             val distance = abs(itemCenterX - indicatorLocation)
-            val fraction = (1f - (distance / itemWidth)).coerceIn(0f, 1f)
+            var fraction = (1f - (distance / itemWidth)).coerceIn(0f, 1f)
+
+            // 过滤逻辑
+            if (isSnapping) {
+                // 如果是点击跳转模式 (Snapping)：
+                // 只有 "目标项(active)" 和 "起始项(previous)" 允许有动画。
+                // 任何中间路过的 Item，强制 fraction = 0 (保持未选中平静状态)。
+                if (index != activeItemIndex && index != previousItemIndex) {
+                    fraction = 0f
+                }
+            }
+            // 如果是拖拽模式 (!isSnapping)，则不做处理，保留波浪效果
 
             // === 1. 没有图标：纯文字模式 (逻辑不变，始终居中) ===
             if (item.icon == null) {
@@ -389,6 +406,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN -> {
                 animator?.cancel() // 停止之前的动画，防止冲突
                 isDragging = false // 重置状态
+                isSnapping = false // 确保手动接管时，退出 Snapping 模式
                 downX = currentX   // 记录按下位置
                 return true
             }
@@ -434,6 +452,20 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
      * 执行吸附动画 (Snap Animation)
      */
     private fun snapToItem(index: Int) {
+        // 如果点击的是同一个，可能只需要简单的回弹，不需要过滤逻辑
+        if (activeItemIndex == index) {
+            onItemReselected?.invoke(index)
+            // 虽然位置没变，但也跑一下动画让它归位（防止拖拽一半松手的情况）
+        } else {
+            // 记录起点和终点，并标记开始 Snapping
+            previousItemIndex = activeItemIndex
+            activeItemIndex = index
+            isSnapping = true
+
+            onItemSelected?.invoke(index)
+        }
+
+
         val totalLength = width - (sideMargins * 2)
         val itemWidth = totalLength / items.size
 
@@ -448,6 +480,19 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                 indicatorLocation = it.animatedValue as Float
                 invalidate()
             }
+
+            // 动画结束或取消时，重置 Snapping 标记
+            // 使用 doOnEnd 需要引入 ktx 库，这里用原生 listener
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    isSnapping = false
+                }
+                override fun onAnimationCancel(animation: android.animation.Animator) {
+                    isSnapping = false
+                }
+            })
+
+
             start()
         }
 
