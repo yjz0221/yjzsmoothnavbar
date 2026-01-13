@@ -78,17 +78,19 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottomBar3"
         app:ssb_backgroundColor="#FFFFFF"
-        app:ssb_barCornerRadius="20dp"
+        app:ssb_barCornerRadius="360dp"
         app:ssb_iconTintActive="#B014BB"
         app:ssb_indicatorColor="#41B83D"
-        app:ssb_indicatorMarginVertical="8dp"
-        app:ssb_indicatorRadius="10dp"
+        app:ssb_indicatorMarginVertical="2dp"
+        app:ssb_indicatorRadius="360dp"
         app:ssb_itemPadding="4dp"
         app:ssb_alwaysShowText="true"
         app:ssb_menu="@menu/home_bottom_nav_menu"
         app:ssb_orientation="vertical"
         app:ssb_roundCorners="all"
-        app:ssb_textSize="10sp" />
+        app:ssb_textSize="10sp"
+        app:ssb_sideMargins="2dp"
+        app:ssb_indicatorAsCircle="true"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

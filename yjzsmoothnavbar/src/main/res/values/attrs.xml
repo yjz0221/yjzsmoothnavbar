@@ -45,5 +45,7 @@
         </attr>
         <!--文字和图标一致同时显示-->
         <attr name="ssb_alwaysShowText" format="boolean" />
+        <!--将指示器绘制为正圆，将忽略将忽略ssb_indicatorRadius、ssb_indicatorMarginVertical属性-->
+        <attr name="ssb_indicatorAsCircle" format="boolean"/>
     </declare-styleable>
 </resources>

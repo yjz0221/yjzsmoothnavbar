@@ -63,6 +63,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     private var sideMargins = 10f.dp() // 左右两侧留白
     private var itemPadding = 10f.dp() // 图标与文字的间距
     private var indicatorMarginVertical = 5f.dp() // 指示器上下的边距，默认给个 5dp
+    private var indicatorAsCircle = false   // 圆形模式开关
     private var roundCornersMode = 15 //圆角控制位，默认全圆角 (15 = 1|2|4|8)
     private var alwaysShowText = false // 选中和未选中时一直显示图标和文字
 
@@ -132,6 +133,8 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                 sideMargins = getDimension(R.styleable.SuperSmoothBottomBar_ssb_sideMargins, sideMargins)
                 itemPadding = getDimension(R.styleable.SuperSmoothBottomBar_ssb_itemPadding, itemPadding)
                 indicatorMarginVertical = getDimension(R.styleable.SuperSmoothBottomBar_ssb_indicatorMarginVertical, indicatorMarginVertical)
+                indicatorAsCircle = getBoolean(R.styleable.SuperSmoothBottomBar_ssb_indicatorAsCircle, false)
+
                 roundCornersMode = getInt(R.styleable.SuperSmoothBottomBar_ssb_roundCorners, roundCornersMode)
                 alwaysShowText = getBoolean(R.styleable.SuperSmoothBottomBar_ssb_alwaysShowText, alwaysShowText)
 
@@ -252,24 +255,51 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     private fun drawIndicator(canvas: Canvas, itemWidth: Float) {
         paint.color = indicatorColor
 
-        // 计算顶部和底部的坐标 (高度 = View高度 - 2 * 边距)
-        val top = indicatorMarginVertical
-        val bottom = height - indicatorMarginVertical
+        if (indicatorAsCircle){
+            // ==========================================
+            // 模式 A: 智能圆形模式 (Auto Circle with Margins)
+            // ==========================================
 
-        // 根据样式决定指示器的宽度 (W)
-        val w = if (itemStyle == STYLE_STACKED) {
-            itemWidth * 0.85f // 垂直堆叠模式宽度
-        } else {
-            itemWidth * 0.85f // 水平胶囊模式宽度
+            // 1. 计算可用高度：View总高度 - 上下边距
+            // 如果您设置了 ssb_indicatorMarginVertical="5dp"，那么圆就不会顶天立地，而是留出空隙
+            val availableHeight = height - indicatorMarginVertical * 2
+            // 2. 计算直径：取 [Item宽度] 和 [可用高度] 中的较小值
+            // 这样既适应了窄 Item，也适应了您想留出的上下边距
+            val diameter = Math.min(itemWidth, availableHeight)
+            val radius = diameter / 2f
+            // 3. 计算中心点 (始终垂直居中)
+            val centerY = height / 2f
+            // 4. 确定区域
+            val rect = RectF(
+                indicatorLocation - radius,
+                centerY - radius,
+                indicatorLocation + radius,
+                centerY + radius
+            )
+            // 5. 绘制正圆
+            canvas.drawRoundRect(rect, radius, radius, paint)
+        }else{
+            // 计算顶部和底部的坐标 (高度 = View高度 - 2 * 边距)
+            val top = indicatorMarginVertical
+            val bottom = height - indicatorMarginVertical
+
+            // 根据样式决定指示器的宽度 (W)
+            val w = if (itemStyle == STYLE_STACKED) {
+                itemWidth * 0.85f // 垂直堆叠模式宽度
+            } else {
+                itemWidth * 0.85f // 水平胶囊模式宽度
+            }
+            // 创建矩形：左右位置由动画值 indicatorLocation 决定，上下位置由 margin 决定
+            val rect = RectF(
+                indicatorLocation - (w / 2),
+                top,
+                indicatorLocation + (w / 2),
+                bottom
+            )
+            canvas.drawRoundRect(rect, indicatorRadius, indicatorRadius, paint)
         }
-        // 创建矩形：左右位置由动画值 indicatorLocation 决定，上下位置由 margin 决定
-        val rect = RectF(
-            indicatorLocation - (w / 2),
-            top,
-            indicatorLocation + (w / 2),
-            bottom
-        )
-        canvas.drawRoundRect(rect, indicatorRadius, indicatorRadius, paint)
+
+
     }
 
 
