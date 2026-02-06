@@ -21,8 +21,14 @@
         <attr name="ssb_sideMargins" format="dimension"/>
         <!--控制 Item 内部图标与文字之间的间距-->
         <attr name="ssb_itemPadding" format="dimension"/>
-        <!--自定义色块（指示器）上下边距-->
+        <!--自定义色块（指示器）上边距-->
         <attr name="ssb_indicatorMarginVertical" format="dimension"/>
+        <!--（色块+图标+文字）在竖直方向上的对齐方式-->
+        <attr name="ssb_gravity" format="enum">
+            <enum name="top" value="0"/>
+            <enum name="center" value="1"/>
+            <enum name="bottom" value="2"/>
+        </attr>
         <!--导航菜单-->
         <attr name="ssb_menu" format="reference"/>
         <!--控制 Item 内部内容的排版样式-->

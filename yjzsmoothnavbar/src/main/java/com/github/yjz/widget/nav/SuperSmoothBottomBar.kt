@@ -47,6 +47,12 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         const val STYLE_SIDE_BY_SIDE = 0
         // 对应 XML 中的 vertical (1) 表现为：选中时图标上移，文字显示在下方
         const val STYLE_STACKED = 1
+
+
+        // 色块在竖直方向上的位置
+        const val GRAVITY_TOP = 0
+        const val GRAVITY_CENTER = 1
+        const val GRAVITY_BOTTOM = 2
     }
 
     // --- XML配置属性 ---
@@ -69,6 +75,9 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
 
     // 内部样式控制 (默认左右结构)
     private var itemStyle = STYLE_SIDE_BY_SIDE
+
+    // 色块竖直方向上的位置
+    private var itemGravity = GRAVITY_CENTER
 
     // --- 内部核心变量 ---
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -141,6 +150,8 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                 // 获取 orientation 属性并映射为 itemStyle
                 itemStyle = getInt(R.styleable.SuperSmoothBottomBar_ssb_orientation, itemStyle)
 
+                itemGravity = getInt(R.styleable.SuperSmoothBottomBar_ssb_gravity, itemGravity)
+
                 // 加载 Menu 资源
                 val menuResId = getResourceId(R.styleable.SuperSmoothBottomBar_ssb_menu, -1)
                 if (menuResId != -1) inflateMenu(menuResId)
@@ -153,6 +164,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
         textPaint.textAlign = Paint.Align.CENTER
         textPaint.textSize = itemTextSize
     }
+
 
     /**
      * 通过 Menu 资源填充数据
@@ -255,41 +267,74 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
     private fun drawIndicator(canvas: Canvas, itemWidth: Float) {
         paint.color = indicatorColor
 
-        if (indicatorAsCircle){
-            // ==========================================
-            // 模式 A: 智能圆形模式 (Auto Circle with Margins)
-            // ==========================================
+        // -----------------------------------------------------------
+        // 步骤 1: 计算内容的高度 (Icon + Text)
+        // -----------------------------------------------------------
+        val contentHeight = if (itemStyle == STYLE_STACKED) {
+            itemIconSize + itemPadding + itemTextSize
+        } else {
+            Math.max(itemIconSize, itemTextSize)
+        }
 
-            // 1. 计算可用高度：View总高度 - 上下边距
-            // 如果您设置了 ssb_indicatorMarginVertical="5dp"，那么圆就不会顶天立地，而是留出空隙
-            val availableHeight = height - indicatorMarginVertical * 2
-            // 2. 计算直径：取 [Item宽度] 和 [可用高度] 中的较小值
-            // 这样既适应了窄 Item，也适应了您想留出的上下边距
-            val diameter = Math.min(itemWidth, availableHeight)
+        // -----------------------------------------------------------
+        // 步骤 2: 确定指示器的实际高度 (Wrapper Height)
+        // - 居中模式：高度由 View 高度减去上下 margin 决定 (填满)
+        // - 靠上/靠下模式：高度由内容高度加上 itemPadding 决定 (自适应包裹)
+        // -----------------------------------------------------------
+        val effectiveIndicatorHeight = if (itemGravity == GRAVITY_CENTER) {
+            height - indicatorMarginVertical * 2
+        } else {
+            contentHeight + itemPadding
+        }
+
+        // -----------------------------------------------------------
+        // 步骤 3: 计算垂直中心点 (baseCenterY)
+        // 该中心点将用于后续 drawItems 对齐内容
+        // -----------------------------------------------------------
+        val baseCenterY = when (itemGravity) {
+            GRAVITY_TOP -> indicatorMarginVertical + effectiveIndicatorHeight / 2f
+            GRAVITY_BOTTOM -> height - indicatorMarginVertical - effectiveIndicatorHeight / 2f
+            else -> height / 2f
+        }
+
+        // -----------------------------------------------------------
+        // 步骤 4: 绘制形状
+        // -----------------------------------------------------------
+
+        if (indicatorAsCircle) {
+            // ==========================================
+            // 模式 A: 圆形模式
+            // ==========================================
+            // 直径取 宽度 和 高度 中的较小值
+            val diameter = Math.min(itemWidth, effectiveIndicatorHeight)
             val radius = diameter / 2f
-            // 3. 计算中心点 (始终垂直居中)
-            val centerY = height / 2f
-            // 4. 确定区域
+
+            // 核心修改：使用 baseCenterY 作为圆心 Y 坐标
             val rect = RectF(
                 indicatorLocation - radius,
-                centerY - radius,
+                baseCenterY - radius,
                 indicatorLocation + radius,
-                centerY + radius
+                baseCenterY + radius
             )
-            // 5. 绘制正圆
             canvas.drawRoundRect(rect, radius, radius, paint)
-        }else{
-            // 计算顶部和底部的坐标 (高度 = View高度 - 2 * 边距)
-            val top = indicatorMarginVertical
-            val bottom = height - indicatorMarginVertical
 
-            // 根据样式决定指示器的宽度 (W)
+        } else {
+            // ==========================================
+            // 模式 B: 矩形/胶囊模式
+            // ==========================================
+
+            // 基于 baseCenterY 和 effectiveIndicatorHeight 确定上下边界
+            // 让指示器围绕 baseCenterY 上下对称分布
+            val top = baseCenterY - (effectiveIndicatorHeight / 2)
+            val bottom = baseCenterY + (effectiveIndicatorHeight / 2)
+
+            // 根据样式决定指示器的宽度
             val w = if (itemStyle == STYLE_STACKED) {
-                itemWidth * 0.85f // 垂直堆叠模式宽度
+                itemWidth * 0.85f
             } else {
-                itemWidth * 0.85f // 水平胶囊模式宽度
+                itemWidth * 0.85f
             }
-            // 创建矩形：左右位置由动画值 indicatorLocation 决定，上下位置由 margin 决定
+
             val rect = RectF(
                 indicatorLocation - (w / 2),
                 top,
@@ -298,8 +343,6 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
             )
             canvas.drawRoundRect(rect, indicatorRadius, indicatorRadius, paint)
         }
-
-
     }
 
 
@@ -307,7 +350,28 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
      * 绘制所有 Item 的内容
      */
     private fun drawItems(canvas: Canvas, itemWidth: Float) {
-        val centerY = height / 2f
+
+        // =======================================================
+        // 步骤 1: 重新计算布局中心点 (逻辑必须与 drawIndicator 保持严格一致)
+        // =======================================================
+        val contentHeight = if (itemStyle == STYLE_STACKED) {
+            itemIconSize + itemPadding + itemTextSize
+        } else {
+            Math.max(itemIconSize, itemTextSize)
+        }
+
+        val effectiveIndicatorHeight = if (itemGravity == GRAVITY_CENTER) {
+            height - indicatorMarginVertical * 2
+        } else {
+            contentHeight + itemPadding
+        }
+
+        val baseCenterY = when (itemGravity) {
+            GRAVITY_TOP -> indicatorMarginVertical + effectiveIndicatorHeight / 2f
+            GRAVITY_BOTTOM -> height - indicatorMarginVertical - effectiveIndicatorHeight / 2f
+            else -> height / 2f
+        }
+        // =======================================================
 
         items.forEachIndexed { index, item ->
             val itemCenterX = sideMargins + (index * itemWidth) + (itemWidth / 2)
@@ -334,7 +398,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                 textPaint.textSize = calculateAutoTextSize(item.title, maxTextWidth, itemTextSize)
 
                 val fontMetrics = textPaint.fontMetrics
-                val baseline = centerY - (fontMetrics.descent + fontMetrics.ascent) / 2
+                val baseline = baseCenterY - (fontMetrics.descent + fontMetrics.ascent) / 2
                 canvas.drawText(item.title, itemCenterX, baseline, textPaint)
 
             } else {
@@ -358,7 +422,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                     val fixedOffset = itemTextSize / 1.4f
                     val verticalOffset = if (alwaysShowText) fixedOffset else (fraction * fixedOffset)
 
-                    val iconCenterY = centerY - verticalOffset
+                    val iconCenterY = baseCenterY - verticalOffset
 
                     // 绘制图标
                     item.icon.let { drawable ->
@@ -410,7 +474,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
                     item.icon.let { drawable ->
                         DrawableCompat.setTint(drawable, iconColor)
                         val l = startX.toInt()
-                        val t = (centerY - itemIconSize / 2).toInt()
+                        val t = (baseCenterY - itemIconSize / 2).toInt()
                         drawable.setBounds(l, t, l + itemIconSize.toInt(), t + itemIconSize.toInt())
                         drawable.draw(canvas)
                     }
@@ -426,7 +490,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
 
                         val textX = startX + itemIconSize + (itemPadding * fraction) + (textRealWidth / 2)
                         val fontMetrics = textPaint.fontMetrics
-                        val textY = centerY - (fontMetrics.descent + fontMetrics.ascent) / 2
+                        val textY = baseCenterY - (fontMetrics.descent + fontMetrics.ascent) / 2
 
                         canvas.drawText(item.title, textX, textY, textPaint)
                     }
@@ -434,6 +498,7 @@ class SuperSmoothBottomBar @JvmOverloads constructor(
             }
         }
     }
+
 
     /**
      * 触摸事件处理：负责点击检测和拖拽跟随

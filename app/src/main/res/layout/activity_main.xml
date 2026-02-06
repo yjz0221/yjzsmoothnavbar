@@ -42,6 +42,7 @@
         app:ssb_indicatorMarginVertical="8dp"
         app:ssb_indicatorRadius="10dp"
         app:ssb_itemPadding="4dp"
+        app:ssb_gravity="top"
         app:ssb_menu="@menu/home_bottom_nav_menu"
         app:ssb_orientation="vertical"
         app:ssb_roundCorners="topLeft|bottomRight"
